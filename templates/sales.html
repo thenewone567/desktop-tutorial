@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Sales{% endblock %}
+
+{% block content %}
+    <h1>Sales</h1>
+    <a href="{{ url_for('add_sale') }}" class="btn btn-primary mb-3">Add Sale</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Discount</th>
+                <th>Tax</th>
+                <th>Grand Total</th>
+                <th>Payment Method</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+            <tr>
+                <td>{{ sale.id }}</td>
+                <td>{{ sale.customer }}</td>
+                <td>{{ sale.date }}</td>
+                <td>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Quantity</th>
+                                <th>Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in sale.items %}
+                            <tr>
+                                <td>{{ item.product_id }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.rate }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+                <td>{{ sale.total }}</td>
+                <td>{{ sale.discount }}</td>
+                <td>{{ sale.tax }}</td>
+                <td>{{ sale.grand_total }}</td>
+                <td>{{ sale.payment_method }}</td>
+                <td>
+                    <a href="{{ url_for('invoice', sale_id=sale.id) }}" target="_blank" class="btn btn-sm btn-info">View Invoice</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

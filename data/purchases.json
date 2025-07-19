@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "supplier": "Supplier A",
+        "date": "2024-01-01",
+        "items": [
+            {
+                "product_id": 1,
+                "quantity": 5,
+                "rate": 500
+            }
+        ]
+    }
+]

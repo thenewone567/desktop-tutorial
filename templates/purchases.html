@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Purchases{% endblock %}
+
+{% block content %}
+    <h1>Purchases</h1>
+    <a href="{{ url_for('add_purchase') }}" class="btn btn-primary mb-3">Add Purchase</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Supplier</th>
+                <th>Date</th>
+                <th>Items</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for purchase in purchases %}
+            <tr>
+                <td>{{ purchase.id }}</td>
+                <td>{{ purchase.supplier }}</td>
+                <td>{{ purchase.date }}</td>
+                <td>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Quantity</th>
+                                <th>Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in purchase.items %}
+                            <tr>
+                                <td>{{ item.product_id }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.rate }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

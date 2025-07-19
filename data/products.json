@@ -1,0 +1,28 @@
+[
+    {
+        "id": 1,
+        "name": "Hammer",
+        "sku": "HMR-001",
+        "barcode": "1234567890123",
+        "category": "Hand Tools",
+        "purchase_rate": 500,
+        "selling_rate": 700,
+        "quantity": 10,
+        "aisle": "S1",
+        "rack": "A2",
+        "bin": "B2"
+    },
+    {
+        "id": 2,
+        "name": "Screwdriver",
+        "sku": "SCD-001",
+        "barcode": "1234567890124",
+        "category": "Hand Tools",
+        "purchase_rate": 200,
+        "selling_rate": 300,
+        "quantity": 20,
+        "aisle": "S1",
+        "rack": "A2",
+        "bin": "B3"
+    }
+]
