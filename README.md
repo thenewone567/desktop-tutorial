@@ -64,4 +64,4 @@ If you are unable to log in after setting up the project, please check the follo
    - Check your web server's error logs for any PHP errors that might be occurring. The location of the error logs will vary depending on your web server configuration.
 
 4. **Debugging:**
-   - If you are still unable to log in, you can uncomment the debugging lines in `templates/login.php` to get more information about what is happening during the login process.
+   - I have enabled error reporting and added debugging statements to the `public/index.php` and `templates/login.php` files. If you are still unable to log in, please check your web server's error logs and the output in your browser for any error messages or debugging information. This will help us pinpoint the exact cause of the issue.

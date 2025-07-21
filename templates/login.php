@@ -12,9 +12,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = $result->fetch_assoc();
 
     // Uncomment the following lines for debugging
-    // var_dump($user);
-    // var_dump($password);
-    // var_dump($user['password']);
+    var_dump($user);
+    var_dump($password);
+    var_dump($user['password']);
 
     if ($user && $password === $user['password']) { // In a real application, use password_verify()
         $_SESSION['user_id'] = $user['id'];
@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['role'] = $user['role'];
 
         // Uncomment the following line for debugging
-        // var_dump($_SESSION);
+        var_dump($_SESSION);
 
         redirect('index.php?page=dashboard');
     } else {
