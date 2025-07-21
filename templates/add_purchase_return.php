@@ -1,117 +1,142 @@
 <?php
+if (!has_permission($_SESSION['role'], 'manage_purchases')) {
+    redirect('index.php?page=dashboard');
+}
+
 $conn = get_db_connection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $purchase_id = $_POST['purchase_id'];
-    $return_date = $_POST['return_date'];
+    $user_id = $_SESSION['user_id'];
+    $reason = $_POST['reason'];
+    $products = json_decode($_POST['products'], true);
 
-    $sql = "INSERT INTO purchase_returns (purchase_id, return_date) VALUES (?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("is", $purchase_id, $return_date);
-    $stmt->execute();
-    $purchase_return_id = $stmt->insert_id;
+    $conn->begin_transaction();
 
-    $product_ids = $_POST['product_id'];
-    $quantities = $_POST['quantity'];
-
-    for ($i = 0; $i < count($product_ids); $i++) {
-        $product_id = $product_ids[$i];
-        $quantity = $quantities[$i];
-
-        $sql = "INSERT INTO purchase_return_items (purchase_return_id, product_id, quantity) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iii", $purchase_return_id, $product_id, $quantity);
+    try {
+        $stmt = $conn->prepare("INSERT INTO purchase_returns (purchase_id, user_id, reason, return_date) VALUES (?, ?, ?, NOW())");
+        $stmt->bind_param("iis", $purchase_id, $user_id, $reason);
         $stmt->execute();
+        $purchase_return_id = $stmt->insert_id;
 
-        $sql = "UPDATE products SET quantity = quantity - ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ii", $quantity, $product_id);
-        $stmt->execute();
+        $stmt = $conn->prepare("INSERT INTO purchase_return_items (purchase_return_id, product_id, quantity) VALUES (?, ?, ?)");
+        foreach ($products as $product) {
+            $stmt->bind_param("iii", $purchase_return_id, $product['id'], $product['quantity']);
+            $stmt->execute();
+
+            $stmt2 = $conn->prepare("UPDATE products SET quantity = quantity - ? WHERE id = ?");
+            $stmt2->bind_param("ii", $product['quantity'], $product['id']);
+            $stmt2->execute();
+        }
+
+        $conn->commit();
+        log_activity($_SESSION['user_id'], "Created new purchase return for purchase id: $purchase_id");
+        redirect('index.php?page=purchase_returns');
+    } catch (Exception $e) {
+        $conn->rollback();
+        $error = "Failed to create purchase return";
     }
-
-    redirect('index.php?page=purchase_returns');
 }
 
-$sql = "SELECT * FROM purchases";
-$result = $conn->query($sql);
-$purchases = $result->fetch_all(MYSQLI_ASSOC);
-
-$sql = "SELECT * FROM products";
-$result = $conn->query($sql);
-$products = $result->fetch_all(MYSQLI_ASSOC);
+$purchases = $conn->query("SELECT id FROM purchases ORDER BY id DESC");
 ?>
 
-<?php include 'header.php'; ?>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">New Purchase Return</h1>
+</div>
 
-<h1>Add Purchase Return</h1>
+<?php if (isset($error)): ?>
+    <div class="alert alert-danger"><?php echo $error; ?></div>
+<?php endif; ?>
 
-<form method="post">
-    <div class="mb-3">
-        <label for="purchase_id" class="form-label">Purchase ID</label>
-        <select class="form-select" id="purchase_id" name="purchase_id" required>
-            <?php foreach ($purchases as $purchase): ?>
-                <option value="<?php echo $purchase['id']; ?>"><?php echo $purchase['id']; ?></option>
-            <?php endforeach; ?>
-        </select>
+<form method="post" id="purchase_return_form">
+    <input type="hidden" name="products" id="products_input">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="purchase_id" class="form-label">Purchase ID</label>
+                <select class="form-select" id="purchase_id" name="purchase_id" required>
+                    <option value="">Select Purchase ID</option>
+                    <?php while ($purchase = $purchases->fetch_assoc()): ?>
+                        <option value="<?php echo $purchase['id']; ?>"><?php echo $purchase['id']; ?></option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
+            <div id="purchase_items_container"></div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="reason" class="form-label">Reason</label>
+                <input type="text" class="form-control" id="reason" name="reason">
+            </div>
+            <button type="submit" class="btn btn-primary">Create Purchase Return</button>
+        </div>
     </div>
-    <div class="mb-3">
-        <label for="return_date" class="form-label">Date</label>
-        <input type="date" class="form-control" id="return_date" name="return_date" required>
-    </div>
-
-    <h2>Items</h2>
-    <table class="table" id="items-table">
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Quantity</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>
-                    <select class="form-select" name="product_id[]" required>
-                        <?php foreach ($products as $product): ?>
-                            <option value="<?php echo $product['id']; ?>"><?php echo $product['name']; ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </td>
-                <td><input type="number" class="form-control" name="quantity[]" required></td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeItem(this)">Remove</button></td>
-            </tr>
-        </tbody>
-    </table>
-    <button type="button" class="btn btn-secondary" onclick="addItem()">Add Item</button>
-    <br>
-
-    <button type="submit" class="btn btn-primary mt-3">Add Purchase Return</button>
-    <a href="index.php?page=purchase_returns" class="btn btn-secondary mt-3">Cancel</a>
 </form>
 
 <script>
-    function addItem() {
-        var table = document.getElementById('items-table').getElementsByTagName('tbody')[0];
-        var newRow = table.insertRow();
-        var cell1 = newRow.insertCell(0);
-        var cell2 = newRow.insertCell(1);
-        var cell3 = newRow.insertCell(2);
+    const purchaseIdSelect = document.getElementById('purchase_id');
+    const purchaseItemsContainer = document.getElementById('purchase_items_container');
+    const productsInput = document.getElementById('products_input');
+    const purchaseReturnForm = document.getElementById('purchase_return_form');
 
-        cell1.innerHTML = `
-            <select class="form-select" name="product_id[]" required>
-                <?php foreach ($products as $product): ?>
-                    <option value="<?php echo $product['id']; ?>"><?php echo $product['name']; ?></option>
-                <?php endforeach; ?>
-            </select>
+    let products = [];
+
+    purchaseIdSelect.addEventListener('change', () => {
+        const purchaseId = purchaseIdSelect.value;
+        if (purchaseId) {
+            fetch(`ajax.php?action=get_purchase_items&purchase_id=${purchaseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    purchaseItemsContainer.innerHTML = '';
+                    products = data;
+                    renderReturnItems();
+                });
+        } else {
+            purchaseItemsContainer.innerHTML = '';
+        }
+    });
+
+    function renderReturnItems() {
+        purchaseItemsContainer.innerHTML = '';
+        const table = document.createElement('table');
+        table.classList.add('table', 'table-bordered');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Return Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
         `;
-        cell2.innerHTML = '<input type="number" class="form-control" name="quantity[]" required>';
-        cell3.innerHTML = '<button type="button" class="btn btn-danger btn-sm" onclick="removeItem(this)">Remove</button>';
+        const tbody = table.querySelector('tbody');
+        products.forEach(product => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${product.product_name}</td>
+                <td>${product.quantity}</td>
+                <td><input type="number" value="0" min="0" max="${product.quantity}" onchange="updateReturnQuantity(${product.product_id}, this.value)"></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        purchaseItemsContainer.appendChild(table);
     }
 
-    function removeItem(button) {
-        var row = button.parentNode.parentNode;
-        row.parentNode.removeChild(row);
+    function updateReturnQuantity(productId, quantity) {
+        const product = products.find(p => p.product_id === productId);
+        if (product) {
+            product.return_quantity = quantity;
+        }
     }
+
+    purchaseReturnForm.addEventListener('submit', (e) => {
+        const returnProducts = products.filter(p => p.return_quantity > 0).map(p => ({
+            id: p.product_id,
+            quantity: p.return_quantity
+        }));
+        productsInput.value = JSON.stringify(returnProducts);
+    });
 </script>
-
-<?php include 'footer.php'; ?>

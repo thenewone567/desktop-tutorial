@@ -1,130 +1,135 @@
 <?php
+if (!has_permission($_SESSION['role'], 'manage_products')) {
+    redirect('index.php?page=dashboard');
+}
+
+$conn = get_db_connection();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $conn = get_db_connection();
     $name = $_POST['name'];
     $sku = $_POST['sku'];
     $barcode = $_POST['barcode'];
-    $category = $_POST['category'];
+    $category_id = $_POST['category_id'];
+    $subcategory_id = $_POST['subcategory_id'];
     $purchase_rate = $_POST['purchase_rate'];
     $selling_rate = $_POST['selling_rate'];
     $quantity = $_POST['quantity'];
-    $aisle = $_POST['aisle'];
-    $rack = $_POST['rack'];
-    $bin = $_POST['bin'];
+    $min_stock = $_POST['min_stock'];
+    $max_stock = $_POST['max_stock'];
+    $warehouse_location_id = $_POST['warehouse_location_id'];
+    $batch_number = $_POST['batch_number'];
+    $expiry_date = $_POST['expiry_date'];
+    $image = '';
 
-    $sql = "INSERT INTO products (name, sku, barcode, category, purchase_rate, selling_rate, quantity, aisle, rack, bin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssssddisss", $name, $sku, $barcode, $category, $purchase_rate, $selling_rate, $quantity, $aisle, $rack, $bin);
-    $stmt->execute();
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        $image = 'uploads/' . basename($_FILES['image']['name']);
+        move_uploaded_file($_FILES['image']['tmp_name'], $image);
+    }
 
-    redirect('index.php?page=inventory');
+    $stmt = $conn->prepare("
+        INSERT INTO products (name, sku, barcode, category_id, subcategory_id, purchase_rate, selling_rate, quantity, min_stock, max_stock, warehouse_location_id, batch_number, expiry_date, image)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->bind_param("sssiisdiisssss", $name, $sku, $barcode, $category_id, $subcategory_id, $purchase_rate, $selling_rate, $quantity, $min_stock, $max_stock, $warehouse_location_id, $batch_number, $expiry_date, $image);
+
+    if ($stmt->execute()) {
+        log_activity($_SESSION['user_id'], "Added new product: $name");
+        redirect('index.php?page=inventory');
+    } else {
+        $error = "Failed to add product";
+    }
 }
+
+$categories = $conn->query("SELECT * FROM categories");
+$subcategories = $conn->query("SELECT * FROM subcategories");
+$warehouse_locations = $conn->query("SELECT * FROM warehouse_locations");
 ?>
 
-<?php include 'header.php'; ?>
-
-<h1>Add Product</h1>
-
-<form method="post">
-    <div class="mb-3">
-        <label for="name" class="form-label">Name</label>
-        <input type="text" class="form-control" id="name" name="name" required>
-    </div>
-    <div class="mb-3">
-        <label for="sku" class="form-label">SKU</label>
-        <input type="text" class="form-control" id="sku" name="sku" required>
-    </div>
-    <div class="mb-3">
-        <label for="barcode" class="form-label">Barcode</label>
-        <div class="input-group">
-            <input type="text" class="form-control" id="barcode" name="barcode" required>
-            <button class="btn btn-outline-secondary" type="button" id="scan-barcode">Scan</button>
-        </div>
-    </div>
-    <div class="mb-3">
-        <label for="category" class="form-label">Category</label>
-        <input type="text" class="form-control" id="category" name="category" required>
-    </div>
-    <div class="mb-3">
-        <label for="purchase_rate" class="form-label">Purchase Rate</label>
-        <input type="number" class="form-control" id="purchase_rate" name="purchase_rate" step="0.01" required>
-    </div>
-    <div class="mb-3">
-        <label for="selling_rate" class="form-label">Selling Rate</label>
-        <input type="number" class="form-control" id="selling_rate" name="selling_rate" step="0.01" required>
-    </div>
-    <div class="mb-3">
-        <label for="quantity" class="form-label">Quantity</label>
-        <input type="number" class="form-control" id="quantity" name="quantity" required>
-    </div>
-    <div class="row">
-        <div class="col-md-4">
-            <label for="aisle" class="form-label">Aisle</label>
-            <input type="text" class="form-control" id="aisle" name="aisle" required>
-        </div>
-        <div class="col-md-4">
-            <label for="rack" class="form-label">Rack</label>
-            <input type="text" class="form-control" id="rack" name="rack" required>
-        </div>
-        <div class="col-md-4">
-            <label for="bin" class="form-label">Bin</label>
-            <input type="text" class="form-control" id="bin" name="bin" required>
-        </div>
-    </div>
-    <button type="submit" class="btn btn-primary mt-3">Add Product</button>
-    <a href="index.php?page=inventory" class="btn btn-secondary mt-3">Cancel</a>
-</form>
-
-<div class="modal" id="barcode-scanner-modal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Scan Barcode</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="interactive" class="viewport"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Add Product</h1>
 </div>
 
-<script src="js/quagga.min.js"></script>
-<script>
-    const scannerModal = new bootstrap.Modal(document.getElementById('barcode-scanner-modal'));
+<?php if (isset($error)): ?>
+    <div class="alert alert-danger"><?php echo $error; ?></div>
+<?php endif; ?>
 
-    document.getElementById('scan-barcode').addEventListener('click', function() {
-        scannerModal.show();
-        Quagga.init({
-            inputStream : {
-                name : "Live",
-                type : "LiveStream",
-                target: document.querySelector('#interactive')
-            },
-            decoder : {
-                readers : ["code_128_reader"]
-            }
-        }, function(err) {
-            if (err) {
-                console.log(err);
-                return
-            }
-            Quagga.start();
-        });
-    });
-
-    Quagga.onDetected(function(result) {
-        document.getElementById('barcode').value = result.codeResult.code;
-        Quagga.stop();
-        scannerModal.hide();
-    });
-
-    document.getElementById('barcode-scanner-modal').addEventListener('hidden.bs.modal', function () {
-        Quagga.stop();
-    });
-</script>
-
-<?php include 'footer.php'; ?>
+<form method="post" enctype="multipart/form-data">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="name" class="form-label">Product Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="sku" class="form-label">SKU</label>
+                <input type="text" class="form-control" id="sku" name="sku" required>
+            </div>
+            <div class="mb-3">
+                <label for="barcode" class="form-label">Barcode</label>
+                <input type="text" class="form-control" id="barcode" name="barcode" required>
+            </div>
+            <div class="mb-3">
+                <label for="category_id" class="form-label">Category</label>
+                <select class="form-select" id="category_id" name="category_id" required>
+                    <option value="">Select Category</option>
+                    <?php while ($cat = $categories->fetch_assoc()): ?>
+                        <option value="<?php echo $cat['id']; ?>"><?php echo $cat['name']; ?></option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="subcategory_id" class="form-label">Subcategory</label>
+                <select class="form-select" id="subcategory_id" name="subcategory_id">
+                    <option value="">Select Subcategory</option>
+                    <?php while ($subcat = $subcategories->fetch_assoc()): ?>
+                        <option value="<?php echo $subcat['id']; ?>"><?php echo $subcat['name']; ?></option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="purchase_rate" class="form-label">Purchase Rate</label>
+                <input type="number" class="form-control" id="purchase_rate" name="purchase_rate" step="0.01" required>
+            </div>
+            <div class="mb-3">
+                <label for="selling_rate" class="form-label">Selling Rate</label>
+                <input type="number" class="form-control" id="selling_rate" name="selling_rate" step="0.01" required>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="quantity" class="form-label">Quantity</label>
+                <input type="number" class="form-control" id="quantity" name="quantity" required>
+            </div>
+            <div class="mb-3">
+                <label for="min_stock" class="form-label">Min Stock</label>
+                <input type="number" class="form-control" id="min_stock" name="min_stock">
+            </div>
+            <div class="mb-3">
+                <label for="max_stock" class="form-label">Max Stock</label>
+                <input type="number" class="form-control" id="max_stock" name="max_stock">
+            </div>
+            <div class="mb-3">
+                <label for="warehouse_location_id" class="form-label">Warehouse Location</label>
+                <select class="form-select" id="warehouse_location_id" name="warehouse_location_id">
+                    <option value="">Select Location</option>
+                    <?php while ($loc = $warehouse_locations->fetch_assoc()): ?>
+                        <option value="<?php echo $loc['id']; ?>"><?php echo $loc['name']; ?></option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="batch_number" class="form-label">Batch Number</label>
+                <input type="text" class="form-control" id="batch_number" name="batch_number">
+            </div>
+            <div class="mb-3">
+                <label for="expiry_date" class="form-label">Expiry Date</label>
+                <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+            </div>
+            <div class="mb-3">
+                <label for="image" class="form-label">Product Image</label>
+                <input type="file" class="form-control" id="image" name="image">
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Product</button>
+</form>

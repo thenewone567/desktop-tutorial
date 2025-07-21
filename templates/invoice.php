@@ -1,74 +1,135 @@
 <?php
+if (!has_permission($_SESSION['role'], 'manage_sales')) {
+    redirect('index.php?page=dashboard');
+}
+
 $conn = get_db_connection();
 $sale_id = $_GET['id'];
 
-$sql = "SELECT * FROM sales WHERE id = ?";
-$stmt = $conn->prepare($sql);
+$stmt = $conn->prepare("
+    SELECT s.*, u.username as user_name, c.name as customer_name, c.address as customer_address
+    FROM sales s
+    LEFT JOIN users u ON s.user_id = u.id
+    LEFT JOIN customers c ON s.customer_id = c.id
+    WHERE s.id = ?
+");
 $stmt->bind_param("i", $sale_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $sale = $result->fetch_assoc();
 
-$item_sql = "SELECT si.*, p.name FROM sale_items si JOIN products p ON si.product_id = p.id WHERE si.sale_id = ?";
-$stmt = $conn->prepare($item_sql);
+$stmt = $conn->prepare("
+    SELECT si.*, p.name as product_name
+    FROM sale_items si
+    LEFT JOIN products p ON si.product_id = p.id
+    WHERE si.sale_id = ?
+");
 $stmt->bind_param("i", $sale_id);
 $stmt->execute();
-$item_result = $stmt->get_result();
-$items = $item_result->fetch_all(MYSQLI_ASSOC);
+$items = $stmt->get_result();
+
+$settings_file = '../config/settings.json';
+$settings = json_decode(file_get_contents($settings_file), true);
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Invoice</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        @media print {
-            .no-print {
-                display: none;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-12">
-                <h1>Invoice</h1>
-                <p><strong>Invoice #:</strong> <?php echo $sale['id']; ?></p>
-                <p><strong>Date:</strong> <?php echo $sale['sale_date']; ?></p>
-                <p><strong>Customer:</strong> <?php echo $sale['customer']; ?></p>
-                <table class="table table-bordered">
-                    <thead>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Invoice #<?php echo str_pad($sale['id'], 6, '0', STR_PAD_LEFT); ?></h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+            Print
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-sm-6">
+                <img src="<?php echo $settings['company_logo']; ?>" alt="Company Logo" width="150">
+                <h6 class="mb-3"><?php echo $settings['company_name']; ?></h6>
+                <div><?php echo $settings['company_address']; ?></div>
+                <div>Email: <?php echo $settings['company_email']; ?></div>
+                <div>Phone: <?php echo $settings['company_phone']; ?></div>
+                <div>GSTIN: <?php echo $settings['company_gst']; ?></div>
+            </div>
+            <div class="col-sm-6 text-sm-end">
+                <h4 class="mb-1">Invoice #<?php echo str_pad($sale['id'], 6, '0', STR_PAD_LEFT); ?></h4>
+                <div>Date: <?php echo $sale['sale_date']; ?></div>
+                <div class="mt-4">
+                    <strong>Bill To:</strong>
+                    <div><?php echo $sale['customer_name']; ?></div>
+                    <div><?php echo $sale['customer_address']; ?></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive-sm">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th class="center">#</th>
+                        <th>Item</th>
+                        <th class="right">Unit Cost</th>
+                        <th class="center">Qty</th>
+                        <th class="right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $i = 1; while ($item = $items->fetch_assoc()): ?>
                         <tr>
-                            <th>Product</th>
-                            <th>Quantity</th>
-                            <th>Rate</th>
-                            <th>Total</th>
+                            <td class="center"><?php echo $i++; ?></td>
+                            <td class="left strong"><?php echo $item['product_name']; ?></td>
+                            <td class="right"><?php echo $item['rate']; ?></td>
+                            <td class="center"><?php echo $item['quantity']; ?></td>
+                            <td class="right"><?php echo $item['quantity'] * $item['rate']; ?></td>
                         </tr>
-                    </thead>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="row">
+            <div class="col-lg-4 col-sm-5">
+            </div>
+            <div class="col-lg-4 col-sm-5 ms-auto">
+                <table class="table table-clear">
                     <tbody>
-                        <?php foreach ($items as $item): ?>
-                            <tr>
-                                <td><?php echo $item['name']; ?></td>
-                                <td><?php echo $item['quantity']; ?></td>
-                                <td><?php echo $item['rate']; ?></td>
-                                <td><?php echo $item['quantity'] * $item['rate']; ?></td>
-                            </tr>
-                        <?php endforeach; ?>
+                        <tr>
+                            <td class="left">
+                                <strong class="text-dark">Subtotal</strong>
+                            </td>
+                            <td class="right"><?php echo $sale['total']; ?></td>
+                        </tr>
+                        <tr>
+                            <td class="left">
+                                <strong class="text-dark">Discount</strong>
+                            </td>
+                            <td class="right"><?php echo $sale['discount']; ?></td>
+                        </tr>
+                        <tr>
+                            <td class="left">
+                                <strong class="text-dark">Tax</strong>
+                            </td>
+                            <td class="right"><?php echo $sale['tax']; ?></td>
+                        </tr>
+                        <tr>
+                            <td class="left">
+                                <strong class="text-dark">Total</strong>
+                            </td>
+                            <td class="right">
+                                <strong class="text-dark"><?php echo $sale['grand_total']; ?></strong>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
-                <p><strong>Subtotal:</strong> <?php echo $sale['total']; ?></p>
-                <p><strong>Discount:</strong> <?php echo $sale['discount']; ?></p>
-                <p><strong>Tax:</strong> <?php echo $sale['tax']; ?></p>
-                <p><strong>Grand Total:</strong> <?php echo $sale['grand_total']; ?></p>
-                <p><strong>Payment Method:</strong> <?php echo $sale['payment_method']; ?></p>
-                <div class="footer text-center">
-                    <p>Thank you for your business!</p>
-                </div>
-                <button class="btn btn-primary no-print" onclick="window.print()">Print Invoice</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-6">
+                <img src="<?php echo $settings['invoice_signature']; ?>" alt="Signature" width="150">
+            </div>
+            <div class="col-sm-6 text-sm-end">
+                <p><?php echo $settings['invoice_footer']; ?></p>
             </div>
         </div>
     </div>
-</body>
-</html>
+</div>

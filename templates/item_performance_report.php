@@ -6,16 +6,16 @@ if (!has_permission($_SESSION['role'], 'view_reports')) {
 $conn = get_db_connection();
 
 $result = $conn->query("
-    SELECT p.name, p.sku, p.quantity, c.name as category_name, w.name as warehouse_location_name
-    FROM products p
-    LEFT JOIN categories c ON p.category_id = c.id
-    LEFT JOIN warehouse_locations w ON p.warehouse_location_id = w.id
-    ORDER BY p.name
+    SELECT p.name, SUM(si.quantity) as total_sold, SUM(si.quantity * si.rate) as total_revenue
+    FROM sale_items si
+    JOIN products p ON si.product_id = p.id
+    GROUP BY p.id
+    ORDER BY total_sold DESC
 ");
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Stock Report</h1>
+    <h1 class="h2">Item Performance Report</h1>
 </div>
 
 <div class="table-responsive">
@@ -23,20 +23,16 @@ $result = $conn->query("
         <thead>
             <tr>
                 <th>Product</th>
-                <th>SKU</th>
-                <th>Category</th>
-                <th>Warehouse Location</th>
-                <th>Quantity</th>
+                <th>Total Sold</th>
+                <th>Total Revenue</th>
             </tr>
         </thead>
         <tbody>
             <?php while ($row = $result->fetch_assoc()): ?>
                 <tr>
                     <td><?php echo $row['name']; ?></td>
-                    <td><?php echo $row['sku']; ?></td>
-                    <td><?php echo $row['category_name']; ?></td>
-                    <td><?php echo $row['warehouse_location_name']; ?></td>
-                    <td><?php echo $row['quantity']; ?></td>
+                    <td><?php echo $row['total_sold']; ?></td>
+                    <td><?php echo $row['total_revenue']; ?></td>
                 </tr>
             <?php endwhile; ?>
         </tbody>

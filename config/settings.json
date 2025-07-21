@@ -1,0 +1,11 @@
+{
+    "company_name": "Your Hardware Shop",
+    "company_logo": "path/to/logo.png",
+    "company_gst": "YOUR_GST_IN",
+    "company_address": "123 Main St, Anytown, USA",
+    "company_phone": "555-123-4567",
+    "company_email": "contact@yourhardwareshop.com",
+    "currency": "₹",
+    "invoice_footer": "Thank you for your business!",
+    "invoice_signature": "path/to/signature.png"
+}
