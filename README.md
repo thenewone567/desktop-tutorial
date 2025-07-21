@@ -47,3 +47,21 @@ The default login credentials for all user roles are:
 
 - **Username:** admin
 - **Password:** password
+
+## Troubleshooting
+
+If you are unable to log in after setting up the project, please check the following:
+
+1. **Database Connection:**
+   - Double-check that the database credentials in `config/database.php` are correct.
+   - Ensure that the MariaDB server is running and accessible.
+
+2. **Session Handling:**
+   - Make sure that the `session.save_path` in your `php.ini` file is set to a writable directory.
+   - Check your browser's developer tools to see if a session cookie is being set after you attempt to log in.
+
+3. **Error Logs:**
+   - Check your web server's error logs for any PHP errors that might be occurring. The location of the error logs will vary depending on your web server configuration.
+
+4. **Debugging:**
+   - If you are still unable to log in, you can uncomment the debugging lines in `templates/login.php` to get more information about what is happening during the login process.

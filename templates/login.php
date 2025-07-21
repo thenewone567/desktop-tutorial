@@ -11,10 +11,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $stmt->get_result();
     $user = $result->fetch_assoc();
 
+    // Uncomment the following lines for debugging
+    // var_dump($user);
+    // var_dump($password);
+    // var_dump($user['password']);
+
     if ($user && $password === $user['password']) { // In a real application, use password_verify()
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
         $_SESSION['role'] = $user['role'];
+
+        // Uncomment the following line for debugging
+        // var_dump($_SESSION);
+
         redirect('index.php?page=dashboard');
     } else {
         $error = "Invalid username or password";
@@ -40,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="password" class="form-control" id="password" name="password" required>
     </div>
     <button type="submit" class="btn btn-primary">Login</button>
+    <a href="index.php?page=forgot_password" class="btn btn-link">Forgot Password?</a>
 </form>
 
 <?php include 'footer.php'; ?>
