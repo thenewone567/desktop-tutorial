@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Hardware Shop & Warehouse Management System</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
     <style>
         body.dark-mode {
             background-color: #212529;
