@@ -1,13 +1,8 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_sales')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $customer = $_POST['customer'];
-    $user_id = $_SESSION['user_id'];
     $total = $_POST['total'];
     $discount = $_POST['discount'];
     $tax = $_POST['tax'];
@@ -18,8 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->begin_transaction();
 
     try {
-        $stmt = $conn->prepare("INSERT INTO sales (customer, user_id, total, discount, tax, grand_total, payment_method, sale_date) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-        $stmt->bind_param("siddsss", $customer, $user_id, $total, $discount, $tax, $grand_total, $payment_method);
+        $stmt = $conn->prepare("INSERT INTO sales (customer, total, discount, tax, grand_total, payment_method, sale_date) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->bind_param("sddsss", $customer, $total, $discount, $tax, $grand_total, $payment_method);
         $stmt->execute();
         $sale_id = $stmt->insert_id;
 
@@ -34,7 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $conn->commit();
-        log_activity($_SESSION['user_id'], "Created new sale with id: $sale_id");
         redirect('index.php?page=invoice&id=' . $sale_id);
     } catch (Exception $e) {
         $conn->rollback();

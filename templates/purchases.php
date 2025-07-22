@@ -1,15 +1,10 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_purchases')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 
 $result = $conn->query("
-    SELECT p.*, s.name as supplier_name, u.username as user_name
+    SELECT p.*, s.name as supplier_name
     FROM purchases p
     LEFT JOIN suppliers s ON p.supplier_id = s.id
-    LEFT JOIN users u ON p.user_id = u.id
     ORDER BY p.purchase_date DESC
 ");
 ?>
@@ -30,7 +25,6 @@ $result = $conn->query("
                 <th>ID</th>
                 <th>Date</th>
                 <th>Supplier</th>
-                <th>User</th>
                 <th>Invoice</th>
                 <th>Actions</th>
             </tr>
@@ -41,7 +35,6 @@ $result = $conn->query("
                     <td><?php echo $row['id']; ?></td>
                     <td><?php echo $row['purchase_date']; ?></td>
                     <td><?php echo $row['supplier_name']; ?></td>
-                    <td><?php echo $row['user_name']; ?></td>
                     <td>
                         <?php if ($row['supplier_invoice']): ?>
                             <a href="<?php echo $row['supplier_invoice']; ?>" target="_blank">View Invoice</a>

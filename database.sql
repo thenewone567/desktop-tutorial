@@ -1,28 +1,3 @@
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('Admin', 'Manager', 'Supervisor', 'Warehouse Associate') NOT NULL,
-    status ENUM('Active', 'Inactive') NOT NULL DEFAULT 'Active',
-    last_login TIMESTAMP
-);
-
-CREATE TABLE login_history (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(255) NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
-CREATE TABLE activity_log (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    activity VARCHAR(255) NOT NULL,
-    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL
@@ -64,12 +39,10 @@ CREATE TABLE products (
 CREATE TABLE stock_adjustments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
-    user_id INT NOT NULL,
     adjustment INT NOT NULL,
     reason VARCHAR(255),
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (product_id) REFERENCES products(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
 CREATE TABLE customers (
@@ -85,13 +58,11 @@ CREATE TABLE sales (
     id INT AUTO_INCREMENT PRIMARY KEY,
     customer_id INT,
     sale_date DATE NOT NULL,
-    user_id INT NOT NULL,
     total DECIMAL(10, 2) NOT NULL,
     discount DECIMAL(10, 2) NOT NULL,
     tax DECIMAL(10, 2) NOT NULL,
     grand_total DECIMAL(10, 2) NOT NULL,
     payment_method VARCHAR(255) NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
 
@@ -118,10 +89,8 @@ CREATE TABLE purchases (
     id INT AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT NOT NULL,
     purchase_date DATE NOT NULL,
-    user_id INT NOT NULL,
     supplier_invoice VARCHAR(255),
-    FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
 );
 
 CREATE TABLE purchase_items (
@@ -138,12 +107,10 @@ CREATE TABLE sales_returns (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sale_id INT NOT NULL,
     return_date DATE NOT NULL,
-    user_id INT NOT NULL,
     reason VARCHAR(255),
     refund_amount DECIMAL(10, 2),
     refund_method VARCHAR(255),
-    FOREIGN KEY (sale_id) REFERENCES sales(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (sale_id) REFERENCES sales(id)
 );
 
 CREATE TABLE sales_return_items (
@@ -159,10 +126,8 @@ CREATE TABLE purchase_returns (
     id INT AUTO_INCREMENT PRIMARY KEY,
     purchase_id INT NOT NULL,
     return_date DATE NOT NULL,
-    user_id INT NOT NULL,
     reason VARCHAR(255),
-    FOREIGN KEY (purchase_id) REFERENCES purchases(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (purchase_id) REFERENCES purchases(id)
 );
 
 CREATE TABLE purchase_return_items (
@@ -173,9 +138,3 @@ CREATE TABLE purchase_return_items (
     FOREIGN KEY (purchase_return_id) REFERENCES purchase_returns(id),
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
-
-INSERT INTO users (username, password, role) VALUES
-('admin', '$2y$10$N.x2z/OfH.dEa.Jg0.I.a.L.2/G.B.1.R.d.e.f.g.h.i.j.k.l.m.n.o.p.q', 'Admin'),
-('manager', '$2y$10$N.x2z/OfH.dEa.Jg0.I.a.L.2/G.B.1.R.d.e.f.g.h.i.j.k.l.m.n.o.p.q', 'Manager'),
-('supervisor', '$2y$10$N.x2z/OfH.dEa.Jg0.I.a.L.2/G.B.1.R.d.e.f.g.h.i.j.k.l.m.n.o.p.q', 'Supervisor'),
-('warehouse', '$2y$10$N.x2z/OfH.dEa.Jg0.I.a.L.2/G.B.1.R.d.e.f.g.h.i.j.k.l.m.n.o.p.q', 'Warehouse Associate');

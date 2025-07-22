@@ -1,14 +1,9 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_purchases')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 
 $result = $conn->query("
-    SELECT pr.*, u.username as user_name
+    SELECT pr.*
     FROM purchase_returns pr
-    LEFT JOIN users u ON pr.user_id = u.id
     ORDER BY pr.return_date DESC
 ");
 ?>
@@ -29,7 +24,6 @@ $result = $conn->query("
                 <th>ID</th>
                 <th>Date</th>
                 <th>Purchase ID</th>
-                <th>User</th>
                 <th>Reason</th>
             </tr>
         </thead>
@@ -39,7 +33,6 @@ $result = $conn->query("
                     <td><?php echo $row['id']; ?></td>
                     <td><?php echo $row['return_date']; ?></td>
                     <td><?php echo $row['purchase_id']; ?></td>
-                    <td><?php echo $row['user_name']; ?></td>
                     <td><?php echo $row['reason']; ?></td>
                 </tr>
             <?php endwhile; ?>

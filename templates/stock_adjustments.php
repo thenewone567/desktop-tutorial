@@ -1,21 +1,16 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_products')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $product_id = $_POST['product_id'];
     $adjustment = $_POST['adjustment'];
     $reason = $_POST['reason'];
-    $user_id = $_SESSION['user_id'];
 
     $conn->begin_transaction();
 
     try {
-        $stmt = $conn->prepare("INSERT INTO stock_adjustments (product_id, user_id, adjustment, reason) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("iiis", $product_id, $user_id, $adjustment, $reason);
+        $stmt = $conn->prepare("INSERT INTO stock_adjustments (product_id, adjustment, reason) VALUES (?, ?, ?)");
+        $stmt->bind_param("iis", $product_id, $adjustment, $reason);
         $stmt->execute();
 
         $stmt = $conn->prepare("UPDATE products SET quantity = quantity + ? WHERE id = ?");
@@ -23,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
 
         $conn->commit();
-        log_activity($_SESSION['user_id'], "Adjusted stock for product id: $product_id by $adjustment");
         redirect('index.php?page=stock_adjustments');
     } catch (Exception $e) {
         $conn->rollback();
@@ -33,10 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $products = $conn->query("SELECT id, name FROM products");
 $adjustments = $conn->query("
-    SELECT sa.*, p.name as product_name, u.username as user_name
+    SELECT sa.*, p.name as product_name
     FROM stock_adjustments sa
     JOIN products p ON sa.product_id = p.id
-    JOIN users u ON sa.user_id = u.id
     ORDER BY sa.date DESC
 ");
 ?>
@@ -78,7 +71,6 @@ $adjustments = $conn->query("
                 <tr>
                     <th>Date</th>
                     <th>Product</th>
-                    <th>User</th>
                     <th>Adjustment</th>
                     <th>Reason</th>
                 </tr>
@@ -88,7 +80,6 @@ $adjustments = $conn->query("
                     <tr>
                         <td><?php echo $row['date']; ?></td>
                         <td><?php echo $row['product_name']; ?></td>
-                        <td><?php echo $row['user_name']; ?></td>
                         <td><?php echo $row['adjustment']; ?></td>
                         <td><?php echo $row['reason']; ?></td>
                     </tr>
