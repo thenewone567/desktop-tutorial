@@ -1,21 +1,16 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_purchases')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $purchase_id = $_POST['purchase_id'];
-    $user_id = $_SESSION['user_id'];
     $reason = $_POST['reason'];
     $products = json_decode($_POST['products'], true);
 
     $conn->begin_transaction();
 
     try {
-        $stmt = $conn->prepare("INSERT INTO purchase_returns (purchase_id, user_id, reason, return_date) VALUES (?, ?, ?, NOW())");
-        $stmt->bind_param("iis", $purchase_id, $user_id, $reason);
+        $stmt = $conn->prepare("INSERT INTO purchase_returns (purchase_id, reason, return_date) VALUES (?, ?, NOW())");
+        $stmt->bind_param("is", $purchase_id, $reason);
         $stmt->execute();
         $purchase_return_id = $stmt->insert_id;
 
@@ -30,7 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $conn->commit();
-        log_activity($_SESSION['user_id'], "Created new purchase return for purchase id: $purchase_id");
         redirect('index.php?page=purchase_returns');
     } catch (Exception $e) {
         $conn->rollback();

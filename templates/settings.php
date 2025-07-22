@@ -1,8 +1,4 @@
 <?php
-if (!has_permission($_SESSION['role'], 'Admin')) {
-    redirect('index.php?page=dashboard');
-}
-
 $settings_file = '../config/settings.json';
 $settings = json_decode(file_get_contents($settings_file), true);
 
@@ -18,7 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $settings['invoice_signature'] = $_POST['invoice_signature'];
 
     file_put_contents($settings_file, json_encode($settings, JSON_PRETTY_PRINT));
-    log_activity($_SESSION['user_id'], "Updated settings");
     redirect('index.php?page=settings');
 }
 ?>

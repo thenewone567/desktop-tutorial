@@ -1,15 +1,10 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_sales')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 $sale_id = $_GET['id'];
 
 $stmt = $conn->prepare("
-    SELECT s.*, u.username as user_name, c.name as customer_name, c.address as customer_address
+    SELECT s.*, c.name as customer_name, c.address as customer_address
     FROM sales s
-    LEFT JOIN users u ON s.user_id = u.id
     LEFT JOIN customers c ON s.customer_id = c.id
     WHERE s.id = ?
 ");
@@ -59,6 +54,10 @@ $settings = json_decode(file_get_contents($settings_file), true);
                     <strong>Bill To:</strong>
                     <div><?php echo $sale['customer_name']; ?></div>
                     <div><?php echo $sale['customer_address']; ?></div>
+                </div>
+                <div class="mt-4">
+                    <strong>Cashier:</strong>
+                    <div><?php echo "N/A"; ?></div>
                 </div>
             </div>
         </div>

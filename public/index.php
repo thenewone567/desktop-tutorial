@@ -7,16 +7,9 @@ session_start();
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
-$page = $_GET['page'] ?? 'login';
-
-if (!is_logged_in() && $page !== 'login') {
-    redirect('index.php?page=login');
-}
+$page = $_GET['page'] ?? 'dashboard';
 
 switch ($page) {
-    case 'login':
-        include '../templates/login.php';
-        break;
     case 'dashboard':
         include '../templates/dashboard.php';
         break;
@@ -76,22 +69,6 @@ switch ($page) {
         break;
     case 'returns_report':
         include '../templates/returns_report.php';
-        break;
-    case 'logout':
-        logout();
-        redirect('index.php?page=login');
-        break;
-    case 'users':
-        include '../templates/users.php';
-        break;
-    case 'add_user':
-        include '../templates/add_user.php';
-        break;
-    case 'edit_user':
-        include '../templates/edit_user.php';
-        break;
-    case 'delete_user':
-        include '../includes/delete_user.php';
         break;
     case 'categories':
         include '../templates/categories.php';

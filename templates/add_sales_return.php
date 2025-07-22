@@ -1,13 +1,8 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_sales')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sale_id = $_POST['sale_id'];
-    $user_id = $_SESSION['user_id'];
     $reason = $_POST['reason'];
     $refund_amount = $_POST['refund_amount'];
     $refund_method = $_POST['refund_method'];
@@ -16,8 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->begin_transaction();
 
     try {
-        $stmt = $conn->prepare("INSERT INTO sales_returns (sale_id, user_id, reason, refund_amount, refund_method, return_date) VALUES (?, ?, ?, ?, ?, NOW())");
-        $stmt->bind_param("iisds", $sale_id, $user_id, $reason, $refund_amount, $refund_method);
+        $stmt = $conn->prepare("INSERT INTO sales_returns (sale_id, reason, refund_amount, refund_method, return_date) VALUES (?, ?, ?, ?, NOW())");
+        $stmt->bind_param("isds", $sale_id, $reason, $refund_amount, $refund_method);
         $stmt->execute();
         $sales_return_id = $stmt->insert_id;
 
@@ -32,7 +27,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $conn->commit();
-        log_activity($_SESSION['user_id'], "Created new sales return for sale id: $sale_id");
         redirect('index.php?page=sales_returns');
     } catch (Exception $e) {
         $conn->rollback();

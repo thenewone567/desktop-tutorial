@@ -1,14 +1,9 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_sales')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 
 $result = $conn->query("
-    SELECT s.*, u.username as user_name
+    SELECT s.*
     FROM sales s
-    LEFT JOIN users u ON s.user_id = u.id
     ORDER BY s.sale_date DESC
 ");
 ?>
@@ -29,7 +24,6 @@ $result = $conn->query("
                 <th>ID</th>
                 <th>Date</th>
                 <th>Customer</th>
-                <th>User</th>
                 <th>Grand Total</th>
                 <th>Actions</th>
             </tr>
@@ -40,7 +34,6 @@ $result = $conn->query("
                     <td><?php echo $row['id']; ?></td>
                     <td><?php echo $row['sale_date']; ?></td>
                     <td><?php echo $row['customer']; ?></td>
-                    <td><?php echo $row['user_name']; ?></td>
                     <td><?php echo $row['grand_total']; ?></td>
                     <td>
                         <a href="index.php?page=invoice&id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-secondary">View Invoice</a>

@@ -1,8 +1,4 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_products')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 $product_id = $_GET['id'];
 
@@ -35,7 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("sssiisdiisssssi", $name, $sku, $barcode, $category_id, $subcategory_id, $purchase_rate, $selling_rate, $quantity, $min_stock, $max_stock, $warehouse_location_id, $batch_number, $expiry_date, $image, $product_id);
 
     if ($stmt->execute()) {
-        log_activity($_SESSION['user_id'], "Updated product: $name");
         redirect('index.php?page=inventory');
     } else {
         $error = "Failed to update product";

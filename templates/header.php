@@ -22,7 +22,5 @@
     </style>
 </head>
 <body>
-    <?php if (is_logged_in()): ?>
-        <?php include 'navigation.php'; ?>
-    <?php endif; ?>
+    <?php include 'navigation.php'; ?>
     <div class="container">

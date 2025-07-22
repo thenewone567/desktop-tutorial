@@ -1,13 +1,8 @@
 <?php
-if (!has_permission($_SESSION['role'], 'manage_purchases')) {
-    redirect('index.php?page=dashboard');
-}
-
 $conn = get_db_connection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $supplier_id = $_POST['supplier_id'];
-    $user_id = $_SESSION['user_id'];
     $products = json_decode($_POST['products'], true);
     $supplier_invoice = '';
 
@@ -19,8 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->begin_transaction();
 
     try {
-        $stmt = $conn->prepare("INSERT INTO purchases (supplier_id, user_id, supplier_invoice, purchase_date) VALUES (?, ?, ?, NOW())");
-        $stmt->bind_param("iis", $supplier_id, $user_id, $supplier_invoice);
+        $stmt = $conn->prepare("INSERT INTO purchases (supplier_id, supplier_invoice, purchase_date) VALUES (?, ?, NOW())");
+        $stmt->bind_param("is", $supplier_id, $supplier_invoice);
         $stmt->execute();
         $purchase_id = $stmt->insert_id;
 
@@ -35,7 +30,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $conn->commit();
-        log_activity($_SESSION['user_id'], "Created new purchase with id: $purchase_id");
         redirect('index.php?page=purchases');
     } catch (Exception $e) {
         $conn->rollback();
