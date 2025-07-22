@@ -25,9 +25,6 @@ switch ($page) {
     case 'delete_product':
         include '../includes/delete_product.php';
         break;
-    case 'forgot_password':
-        include '../templates/forgot_password.php';
-        break;
     case 'purchases':
         include '../templates/purchases.php';
         break;
